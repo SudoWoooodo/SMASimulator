@@ -6,10 +6,13 @@ public class Main{
     public static void main(String[] args) {
 
         //Definição de valores do Gerador Aleatório
-        double seed = 21; //precisa ser random TODO5
+        int quantSeeds = 3; // Selecione a quantidade de seeds e também quantas vezes o programa irá rodar
+        int perSeed = 2000; // número de aleatórios por seed
         double a = 1644525;
         double M = Math.pow(2, 32);
         double c = 1013904223;
+        
+        //Criação dos Registradores 
         ArrayList ListaFinal = new ArrayList<Integer>();
         ArrayList parametros = new ArrayList<Integer>();
         ArrayList tempos = new ArrayList<Integer>();
@@ -17,8 +20,16 @@ public class Main{
         ArrayList eventos = new ArrayList<Integer>();
         ArrayList eventosNome = new ArrayList<String>();
 
+        //Definição de seeds
+        ArrayList seeds = new ArrayList<Integer>();
+        seeds.add(1);  
+        seeds.add(2);  
+        seeds.add(3);  
+        seeds.add(4);
+        seeds.add(5); 
+
         //Chamada de método Gerador
-        ListaFinal = PseudoGenerator(seed, a, M, c, ListaFinal);
+        //ListaFinal = PseudoGenerator(perSeed, a, M, c, ListaFinal);
 
 
         //Gerar um .txt com os números
@@ -27,18 +38,35 @@ public class Main{
 
         //Definição de valores fila
         String eventoInicial = "CHEGADAINICIAL";
-        parametros.add(0); // 0fila = 0; -> fila começa em zero
-        parametros.add(0.0); // 1double tempo = 0; //conta o tempo
-        parametros.add(1); // 2int servidores = 1; //num de servidores
-        parametros.add(3); // 3int capacidade = 3; //capacity
-        parametros.add(0); // 4int perda = 0; //perda
-        parametros.add(2); // 5chegadas (
-        parametros.add(4); // 6chegadas )
-        parametros.add(3); // 7atendimento (
-        parametros.add(5); // 8atendimento )
+
+        parametros.add(0);                // 0fila = 0; -> fila começa em zero
+        parametros.add(0.0);             // 1double tempo = 0; //conta o tempo
+        parametros.add(1);              // 2int servidores = 1; //num de servidores
+        parametros.add(3);             // 3int capacidade = 3; //capacity
+        parametros.add(0);            // 4int perda = 0; //perda
+        parametros.add(2);           // 5chegadas (
+        parametros.add(4);          // 6chegadas )
+        parametros.add(3);         // 7atendimento (
+        parametros.add(5);        // 8atendimento )
+        parametros.add(perSeed); // 9perSeed
 
         //Começa a simulação
-        interpreter(eventoInicial, ListaFinal, parametros, tempos, escalonador, eventos, eventosNome);
+        while (quantSeeds > 0){
+
+            //define a seed inicial para essa run
+            int and = (int) seeds.get(quantSeeds);
+            
+            //rodar a lista 
+            ListaFinal = PseudoGenerator(perSeed, a, M, c, ListaFinal, and);
+
+            interpreter(eventoInicial, ListaFinal, parametros, tempos, escalonador, eventos, eventosNome);
+
+            //fazer um metodo pra zerar as listas e rodar dnv #TODO
+            quantSeeds -= 1;
+
+            System.out.println("rodou " + quantSeeds );
+
+        }
     }
 
     public static void interpreter (String evento, ArrayList l, ArrayList p, ArrayList t, ArrayList e, ArrayList even, ArrayList evenNm){
@@ -49,38 +77,43 @@ public class Main{
         int servidores = (int) p.get(2);
         int capacidade = (int) p.get(3);
         int perda = (int) p.get(4);
+        int perSeed = (int) p.get(9);
         int chA = 2;
         int chB = 4;
         int atA = 3;
         int atB = 5;
         double tempo = 0;
 
-        if (eventos < l.size()){
+        if (eventos < perSeed){
+            
+            if (l.size() != 1){
 
             switch(evento){
 
                 case "CHEGADA":{
 
-                    double sorteio = rnd(chA, chB, (double) l.get(eventos));
-                    tempo = tempoaux + sorteio;
-
-                    e.add(tempo);
-                    evenNm.add(evento);
-
-                    even.add(0); // gastpu um aleatório
-
-                    System.out.println("\n Chegada agendada -> " + " " + tempo);
-                } break;
-
-                case "SAIDA":{
-                    
-                    double sorteio = rnd(atA, atB, (double) l.get(eventos));
+                    double sorteio = rnd(chA, chB, (double) l.get(0));
                     tempo = tempoaux + sorteio;
 
                     e.add(tempo);
                     evenNm.add(evento);
 
                     even.add(0); // gastou um aleatório
+                    l.remove(0);
+
+                    System.out.println("\n Chegada agendada -> " + " " + tempo);
+                } break;
+
+                case "SAIDA":{
+                    
+                    double sorteio = rnd(atA, atB, (double) l.get(0));
+                    tempo = tempoaux + sorteio;
+
+                    e.add(tempo);
+                    evenNm.add(evento);
+
+                    even.add(0); // gastou um aleatório
+                    l.remove(0);
 
                     System.out.println("\n Saida agendada ->" + tempo + " \n");
                 } break;
@@ -121,6 +154,11 @@ public class Main{
 
                     escalonador(pos, l, p, t, e, even, evenNm);
                 } break;
+            } 
+            } else {
+                
+                 l = PseudoGenerator(perSeed, a, M, c, ListaFinal, and);
+
             }
         }
     }
@@ -134,7 +172,7 @@ public class Main{
         int capacidade = (int) p.get(3);
         int perda = (int) p.get(4);
 
-            switch((String) evenNm.get(pos)){
+            switch(evenNm.get(pos).toString()){
 
                 case "CHEGADA":{
 
@@ -185,16 +223,21 @@ public class Main{
     }
 
 
-    public static ArrayList PseudoGenerator(double seed, double a, double M, double c, ArrayList L){
+    public static ArrayList PseudoGenerator(int perSeed, double a, double M, double c, ArrayList L, int seed){
 
+        if (perSeed > 999){
+            perSeed = 999;
+        }
+
+        double qseed = seed;
         double pseed = 0;
-        double uni = 0;
+        double uni = 0; 
 
-        while( L.size() < 999 ){
+        while( L.size() < perSeed ){
             
-            pseed = seed;
-            seed = (a * pseed + c) % M;
-            uni = seed/M;
+            pseed = qseed;
+            qseed = (a * pseed + c) % M;
+            uni = qseed/M;
             L.add(uni);
 
         }
